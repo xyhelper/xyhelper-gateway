@@ -1,12 +1,16 @@
 package chat
 
 import (
+	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
 	"xyhelper-gateway/config"
 	"xyhelper-gateway/v1/chat/apichatresp"
+	"xyhelper-gateway/v1/chat/apichatrespstream"
 
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/net/ghttp"
 	"github.com/xyhelper/chatgpt-go"
@@ -78,12 +82,86 @@ func ChatCompletions(r *ghttp.Request) {
 
 	if req.Stream {
 		g.Log().Debug(ctx, "Stream")
+		var message string
+		stream, err := cli.GetChatStream(newMessage)
+		for err != nil {
+			if err.Error() == "send message failed: 202 Accepted" {
+				g.Log().Debug(ctx, "共享池新会话分配到未登录账号，重新获取会话", req)
+				stream, err = cli.GetChatStream(newMessage)
+				continue
+			} else {
+				g.Log().Error(ctx, err)
+				r.Response.WriteStatusExit(500)
+			}
+		}
+
+		rw := r.Response.RawWriter()
+		flusher, ok := rw.(http.Flusher)
+		if !ok {
+			g.Log().Error(ctx, "rw.(http.Flusher) error")
+			r.Response.WriteStatusExit(500)
+			return
+		}
+		r.Response.Header().Set("Content-Type", "text/event-stream")
+		r.Response.Header().Set("Cache-Control", "no-cache")
+		r.Response.Header().Set("Connection", "keep-alive")
+		var resData *apichatrespstream.ChatCompletion
+
+		for text := range stream.Stream {
+			if text.Role != "assistant" {
+				continue
+			}
+			// g.Log().Debug(ctx, "message", message)
+
+			answer := strings.Replace(text.Content, message, "", 1)
+			message = text.Content
+
+			choice := &apichatrespstream.Choice{
+				Delta: map[string]interface{}{
+					"content": answer,
+				},
+				Index: 0,
+			}
+
+			resData = &apichatrespstream.ChatCompletion{
+				ID:      text.MessageID,
+				Object:  "chat.completion",
+				Created: time.Now().Unix(),
+				Model:   "gpt-3.5-turbo-0301",
+				Choices: []apichatrespstream.Choice{
+					*choice,
+				},
+			}
+			// g.Log().Debug(ctx, "resData", resData)
+			resJson := gjson.New(resData)
+			// g.Log().Debug(ctx, "resJson", resJson.MustToJsonString())
+
+			_, err = fmt.Fprintf(rw, "data: %s\n\n", resJson.MustToJsonString())
+
+			if err != nil {
+				g.Log().Error(ctx, "fmt.Fprintf error", err)
+				break
+			}
+			flusher.Flush()
+
+		}
+		_, err = fmt.Fprintf(rw, "data: %s\n\n", "[DONE]")
+		if err != nil {
+			g.Log().Error(ctx, "fmt.Fprintf error", err)
+		}
+		flusher.Flush()
 	} else {
 		g.Log().Debug(ctx, "Not Stream")
 		data, err := cli.GetChatText(newMessage)
-		if err != nil {
-			g.Log().Error(ctx, err)
-			r.Response.WriteStatusExit(500)
+		for err != nil {
+			if err.Error() == "send message failed: 202 Accepted" {
+				g.Log().Debug(ctx, "共享池新会话分配到未登录账号，重新获取会话", req)
+				data, err = cli.GetChatText(newMessage)
+				continue
+			} else {
+				g.Log().Error(ctx, err)
+				r.Response.WriteStatusExit(500)
+			}
 		}
 		// var resData *apichatresp.ChatCompletion
 		resData := &apichatresp.ChatCompletion{
