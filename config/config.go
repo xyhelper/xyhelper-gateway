@@ -18,7 +18,7 @@ func init() {
 	ctx := gctx.GetInitCtx()
 	port := g.Cfg().MustGetWithEnv(ctx, "PORT")
 	if port.IsEmpty() {
-		PORT = 8199
+		PORT = 8080
 	} else {
 		PORT = port.Int()
 	}
