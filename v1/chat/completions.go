@@ -107,6 +107,7 @@ func ChatCompletions(r *ghttp.Request) {
 				},
 			},
 		}
+		g.Log().Debug(ctx, "resData", resData)
 		r.Response.WriteJsonExit(resData)
 	}
 }
