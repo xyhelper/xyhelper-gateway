@@ -58,11 +58,12 @@ func ChatCompletions(r *ghttp.Request) {
 		r.Response.WriteJsonExit(err.Error())
 	}
 	g.Log().Debug(ctx, "req", req)
-	var newMessage string
+	newMessage := "下面是我们的对话记录,请继续回答问题,请只给出答案内容\n"
 
 	for _, message := range req.Messages {
 		newMessage += message.Role + ":" + message.Content + "\n"
 	}
+	g.Log().Debug(ctx, "newMessage", newMessage)
 
 	AccessToken, ok := config.Tokens.Rand()
 	if !ok {
