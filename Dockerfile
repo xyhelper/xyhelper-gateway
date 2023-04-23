@@ -1,1 +1,1 @@
-FROM xyhelper/xyhelper/xyhelper-gateway:latest
+FROM xyhelper/xyhelper-gateway:latest
