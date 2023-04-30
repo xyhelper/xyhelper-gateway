@@ -16,7 +16,7 @@ services:
     ports:
       - 8080:8080
     environment:
-      BASEURI: "https://free2.xyhelper.cn"
+      BASEURI: "https://freechat2.xyhelper.cn"
       TOKENS: "token1,token2,token3"
 
 ```
