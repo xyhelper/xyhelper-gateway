@@ -1,0 +1,11 @@
+version: '3'
+services:
+  xyhelper-gateway:
+    image: xyhelper/xyhelper-gateway:latest
+    container_name: xyhelper-gateway
+    restart: always
+    ports:
+      - 8080:8080
+    environment:
+      BASEURI: "https://free2.xyhelper.cn"
+      TOKENS: "token1,token2,token3"
