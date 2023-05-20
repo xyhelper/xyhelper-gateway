@@ -65,10 +65,13 @@ func ChatCompletions(r *ghttp.Request) {
 	}
 	g.Log().Debug(ctx, "newMessage", newMessage)
 
-	AccessToken, ok := config.Tokens.Rand()
-	if !ok {
-		r.Response.WriteStatusExit(500)
-	}
+	// AccessToken, ok := config.Tokens.Rand()
+
+	// if !ok {
+	// 	r.Response.WriteStatusExit(500)
+	// }
+
+	AccessToken := authkey
 	// 按token加锁
 	if _, ok := TokenLockMap[AccessToken]; !ok {
 		TokenLockMap[AccessToken] = &sync.Mutex{}

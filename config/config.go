@@ -11,7 +11,7 @@ var (
 	PORT      int
 	Tokens    = garray.NewStrArrayFrom([]string{"xyhelper-gateway-default-token"})
 	TimeOutMs = 300000
-	BaseURI   = "https://freechat.xyhelper.cn"
+	BaseURI   = "https://personalchat.xyhelper.cn"
 )
 
 func init() {
